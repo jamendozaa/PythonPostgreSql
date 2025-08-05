@@ -1,0 +1,1 @@
+# Domain layer - Capa más interna de la arquitectura limpia 

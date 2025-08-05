@@ -37,7 +37,8 @@ else:
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-def get_db():
+def get_db_session():
+    """Obtiene una sesión de base de datos"""
     db = SessionLocal()
     try:
         yield db
@@ -46,4 +47,4 @@ def get_db():
         db.rollback()
         raise
     finally:
-        db.close()
+        db.close() 

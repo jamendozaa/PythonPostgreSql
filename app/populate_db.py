@@ -1,53 +1,40 @@
-import psycopg2
+# app/populate_db.py mejorado
+from sqlalchemy.orm import Session
 from faker import Faker
 import random
 import os
+import sys
 
-# Leer credenciales desde variable de entorno
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@db:5432/mydb")
+# Agregar el directorio padre al path para poder importar los módulos
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Parsear la URL (opción simple para psycopg2)
-import re
-pattern = r"postgresql://(.*?):(.*?)@(.*?):(.*?)/(.*)"
-match = re.match(pattern, DATABASE_URL)
-db_user, db_pass, db_host, db_port, db_name = match.groups()
+from app.database import SessionLocal, engine, Base
+from app.models import Product
 
-# Conexión a PostgreSQL
-conn = psycopg2.connect(
-    dbname=db_name,
-    user=db_user,
-    password=db_pass,
-    host=db_host,
-    port=db_port
-)
-cursor = conn.cursor()
-fake = Faker()
+def create_sample_products(db: Session, num_products: int = 1000):
+    fake = Faker(['es_ES'])  # Datos en español
+    
+    categories = ["Electronics", "Books", "Clothing", "Home", "Toys", "Sports", "Beauty", "Automotive"]
+    
+    for _ in range(num_products):
+        product = Product(
+            name=fake.word().capitalize() + " " + fake.word().capitalize(),
+            price=round(random.uniform(5, 500), 2),
+            stock=random.randint(0, 100),
+            category=random.choice(categories)
+        )
+        db.add(product)
+    
+    db.commit()
+    print(f"✅ {num_products} productos creados exitosamente.")
 
-# Crear tabla si no existe
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS products (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    price NUMERIC(10,2),
-    stock INTEGER,
-    category TEXT,
-    created_at TIMESTAMP
-);
-""")
-
-# Insertar 1000 productos falsos
-for _ in range(1000):
-    name = fake.word().capitalize()
-    price = round(random.uniform(5, 500), 2)
-    stock = random.randint(0, 100)
-    category = random.choice(["Electronics", "Books", "Clothing", "Home", "Toys"])
-    created_at = fake.date_time_this_year()
-    cursor.execute("""
-        INSERT INTO products (name, price, stock, category, created_at)
-        VALUES (%s, %s, %s, %s, %s);
-    """, (name, price, stock, category, created_at))
-
-conn.commit()
-cursor.close()
-conn.close()
-print("✅ Base de datos poblada con éxito.")
+if __name__ == "__main__":
+    # Crear tablas
+    Base.metadata.create_all(bind=engine)
+    
+    # Poblar base de datos
+    db = SessionLocal()
+    try:
+        create_sample_products(db)
+    finally:
+        db.close()

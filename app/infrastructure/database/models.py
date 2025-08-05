@@ -1,8 +1,9 @@
-from sqlalchemy import Column, Integer, String, Numeric, DateTime, Index, CheckConstraint
+from sqlalchemy import Column, Integer, String, Numeric, DateTime, Index
 from sqlalchemy.sql import func
-from .database import Base
+from .connection import Base
 
-class Product(Base):
+class ProductModel(Base):
+    """Modelo SQLAlchemy para la tabla products"""
     __tablename__ = "products"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -13,12 +14,10 @@ class Product(Base):
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
-    # Índices para mejorar rendimiento
     __table_args__ = (
         Index('idx_product_category_price', 'category', 'price'),
-        CheckConstraint('price >= 0', name='check_price_positive'),
-        CheckConstraint('stock >= 0', name='check_stock_positive'),
+        Index('idx_product_stock', 'stock'),
     )
     
     def __repr__(self):
-        return f"<Product(id={self.id}, name='{self.name}', price={self.price})>"
+        return f"<ProductModel(id={self.id}, name='{self.name}', price={self.price}, stock={self.stock})>" 
